@@ -89,6 +89,7 @@ const addBooks = () => {
             Mark as read
           </button>
           <div class="flex flex-col space-y-2">
+            <p>{{ results.length }} results</p>
             <div
               v-for="(book, i) in results"
               :key="i"
