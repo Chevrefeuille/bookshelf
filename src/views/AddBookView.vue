@@ -11,7 +11,9 @@ const authorQuery = ref("");
 
 const results: Ref<Book[]> = ref([]);
 
+const loadingSearch = ref(false);
 const search = async () => {
+  loadingSearch.value = true;
   const query: { title?: string; author?: string } = {};
   if (titleQuery.value) {
     query.title = titleQuery.value;
@@ -31,11 +33,12 @@ const search = async () => {
       tags: doc.subject ? doc.subject : [],
       languages: doc.language ? doc.language : [],
       editions: doc.edition_key ? doc.edition_key : [],
-      coverUrl: doc.edition_key
-        ? `https://covers.openlibrary.org/b/olid/${doc.edition_key[0]}-M.jpg`
+      coverUrl: doc.cover_edition_key
+        ? `https://covers.openlibrary.org/b/olid/${doc.cover_edition_key}-M.jpg`
         : "https://via.placeholder.com/150x350",
     })
   );
+  loadingSearch.value = false;
 };
 const debouncedSearch = debounce(search, 1000);
 
@@ -57,8 +60,13 @@ const isSelected = (key: string) => {
   return selectedBooks.value.some((book: Book) => book.key === key);
 };
 
+const loadingAdd = ref(false);
 const addBooks = () => {
-  addBookRecords(selectedBooks.value);
+  loadingAdd.value = true;
+  addBookRecords(selectedBooks.value).then(() => {
+    loadingAdd.value = false;
+    selectedBooks.value = [];
+  });
 };
 </script>
 
@@ -85,11 +93,16 @@ const addBooks = () => {
       </div>
       <div class="mt-8 rounded-md bg-slate-200 p-4">
         <div v-if="results.length">
-          <button class="mb-2 rounded-md bg-gray-300 p-2" @click="addBooks()">
-            Mark as read
-          </button>
+          <div class="flex items-center space-x-2">
+            <button class="mb-2 rounded-md bg-gray-300 p-2" @click="addBooks()">
+              Mark as read
+            </button>
+            <span v-if="loadingAdd">Adding...</span>
+          </div>
           <div class="flex flex-col space-y-2">
-            <p>{{ results.length }} results</p>
+            <p>
+              {{ results.length }} results, {{ selectedBooks.length }} selected
+            </p>
             <div
               v-for="(book, i) in results"
               :key="i"
@@ -107,6 +120,7 @@ const addBooks = () => {
             </div>
           </div>
         </div>
+        <div v-else-if="loadingSearch">Loading...</div>
         <div v-else>No results matching the given query</div>
       </div>
     </div>
